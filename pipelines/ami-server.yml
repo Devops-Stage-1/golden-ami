@@ -1,0 +1,60 @@
+format_version: 10
+pipelines:
+  ami-server:
+    group: ami-server
+    materials:
+      git-4210a58:
+        git: https://github.com/Devops-Stage-1/golden-ami.git
+        shallow_clone: false
+        branch: main
+    secure_variables:
+      TF_VAR_vault_token: AES:N5JXJVhIJm9y2HkjtQm41w==:aGpaK62yFUdVnCjl7sFPepVyPAL29mSTMXFQdY/tBnk=
+    stages:
+      - create:
+          fetch_materials: true
+          approval:
+            type: manual
+          jobs:
+            Terraform:
+              timeout: 0
+              tasks:
+                - exec:
+                    arguments:
+                      - init
+                      - -backend-config=backend.tf
+                    command: terraform
+                    run_if: passed
+                - exec:
+                    arguments:
+                      - apply
+                      - -auto-approve
+                    command: terraform
+                    run_if: passed
+
+      - destroy:
+          fetch_materials: true
+          approval:
+            type: manual
+          jobs:
+            Terraform:
+              timeout: 0
+              tasks:
+                - exec:
+                    arguments:
+                      - init
+                      - -backend-config=backend.tf
+                    command: terraform
+                    run_if: passed
+                - exec:
+                    arguments:
+                      - state
+                      - rm
+                      - aws_ami_from_instance.ami
+                    command: terraform
+                    run_if: passed
+                - exec:
+                    arguments:
+                      - destroy
+                      - auto-approve
+                    command: terraform
+                    run_if: passed
